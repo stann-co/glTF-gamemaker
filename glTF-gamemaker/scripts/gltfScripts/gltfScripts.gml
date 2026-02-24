@@ -1,0 +1,535 @@
+/// load meshes and skins from the given filename
+function gltfLoad(fname) {
+	static results = { };
+	// dont load the same file twice
+	if (!is_undefined(results[$ fname])) {
+		return results[$ fname];
+	}
+	
+	var dat = loadStructFromFile(fname);
+	
+	// returned struct which stores the names of all meshes and skinnedMeshes
+	var result = {
+		skinnedMeshes : [ ],
+		meshes : [ ],
+	};
+	
+	results[$ fname] = result;
+	
+	var buffers = [ ];
+	
+	// for each buffer
+		// skip header info and put into a gamemaker Buffer for reading
+	
+	for (var i = 0; i < array_length(dat.buffers); i++) {
+		buffers[i] = -1;
+		var uri = dat.buffers[i].uri;
+		if (string_starts_with(uri, "data:")) {
+			uri = string_delete(uri, 1, string_pos(",", uri));
+			buffers[i] = buffer_base64_decode(uri);
+		}
+	}
+	
+	var nodes = dat.nodes;
+	
+	/*		accessing animation samplers
+	
+		animations[]
+			channels[]
+				sampler : SAMPLER ID
+				target{}
+					node : IND
+					path : TYPE (eg "rotation", "translation")
+			name : ARMATURE_NAME
+			samplers[]
+				input : ACCESSOR ID
+				interpolation : TYPE ("STEP", "LINEAR", or "CUBICSPLINE")
+				output : ACCESSOR ID
+				
+	*/
+	
+	// iterate over animation data FIRST
+	// so i can add it to bones as i go instead of reverse lookup bullshit
+	var boneAnimationData = array_create(array_length(nodes), undefined);
+	var animations = dat[$ "animations"];
+	if (!is_undefined(animations)) {
+		for (var i = 0; i < array_length(animations); i++) {
+			var channels = animations[i][$ "channels"];
+			var name = animations[i].name;
+			
+			debugPrint("animation {0} name is {1}!", [ i, name ?? "missing" ]);
+			
+			for (var j = 0; j < array_length(channels); j++) {
+				var c = channels[j];
+				var type = c.target.path;
+				var nodeID = c.target.node;
+				var samplerID = c.sampler;
+				var sampler = animations[i].samplers[samplerID];
+				
+				var sInput = sampler.input;
+				var sOutput = sampler.output;
+				var sInterp = sampler[$ "interpolation"];
+				
+				var bAnim = {
+					in : __gltf_access_buffer(sInput, dat, buffers), // keyframe
+					out : __gltf_access_buffer(sOutput, dat, buffers), // transform information
+					interp : sInterp,
+				};
+				
+				boneAnimationData[nodeID] = boneAnimationData[nodeID] ?? { };
+				boneAnimationData[nodeID][$ name] = boneAnimationData[nodeID][$ name] ?? { };
+				boneAnimationData[nodeID][$ name][$ type] = bAnim;
+			}
+		}
+	}
+	
+	for (var i = 0; i < array_length(nodes); i++) {
+		var node = nodes[i];
+		var meshID = node[$ "mesh"];
+		if (!is_undefined(meshID)) {
+			var skinID = node[$ "skin"];
+			if (is_undefined(skinID)) {
+				// load mesh
+				__gltf_load_mesh(dat, buffers, meshID);
+				// store name for returning
+				array_push(result.meshes, dat.meshes[meshID].name);
+			}
+			else {
+				// load skinned mesh
+				__gltf_load_mesh(dat, buffers, meshID, skinID, boneAnimationData);
+				// store name for returning
+				array_push(result.skinnedMeshes, dat.skins[skinID].name);
+			}
+		}
+	}
+	
+	
+	
+	// clear all buffers
+	for (var i = 0; i < array_length(buffers); i++) {
+		if (buffers[i] > -1) buffer_delete(buffers[i]);
+	}
+	
+	return result;
+	//return dat;
+}
+
+/// called automatically by gltfLoad()
+function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undefined) {
+	var nodes = dat.nodes;
+	
+	var mesh = dat.meshes[meshID];
+	
+	var name = mesh.name;
+	
+	var skinned = !is_undefined(skinID);
+	
+	var textures = [ ];
+	
+	for (var i = 0; i < array_length(mesh.primitives); i++) {
+		var prim = mesh.primitives[i];
+		var a = prim.attributes;
+		
+		textures[i] = sprite_get_texture(sprCube, 0);
+		
+		// are there images?
+		var mat = prim[$ "material"];
+		if (!is_undefined(mat)) {
+			/*		accessing materials (just for the textures)
+			
+				materials[]
+					<MATERIAL TYPE>{}				<- eg pbrMetallicRoughness which is the default in blender
+						baseColorTexture{}
+							index : TEXTURE ID
+
+				textures[]
+					source : IMAGE ID
+				
+				images[]
+					bufferView : BUFFERVIEW ID
+					mimeType : FILE TYPE			<- eg "image/png"
+					name : FILE NAME
+				
+			*/
+			mat = dat.materials[mat];
+			// hack to get it working for now
+			var roughness = mat[$ "pbrMetallicRoughness"];
+			if (!is_undefined(roughness)) {
+				if (!is_undefined(roughness[$ "baseColorTexture"])) {
+					mat = roughness.baseColorTexture.index;
+					var fname = __gltf_buffer_export_image(mat, dat, buffers, false);
+					textures[i] = getTexture(fname);
+				}
+			}
+		}
+		
+		/*		accessing dimensions of a mesh
+		
+			meshes[]
+				primitives[]
+					attributes{}
+						POSITION : ACCESSOR ID
+		
+			accessors[]
+				min : [x,y,z]
+				max : [x,y,z]
+		
+		*/
+		
+		var aPos = a.POSITION;
+		var dMin = dat.accessors[aPos].min;
+		var dMax = dat.accessors[aPos].max;
+		debugPrint("dMin: {0}, dMax: {1}", [ string(dMin), string(dMax) ]);
+		var dims = new aabb(arrayToVec3(dMin), arrayToVec3(dMax));
+		debugPrint("dimensions of primitive {0}: {1}", [ i, string(dims) ]);
+		
+		// extract v, vn, vt (vertex position, normal, texcoord)
+	
+		var v = __gltf_access_buffer(a.POSITION, dat, buffers);
+		var vn = __gltf_access_buffer(a.NORMAL, dat, buffers);
+		var vt = __gltf_access_buffer(a.TEXCOORD_0, dat, buffers);
+		var indices = __gltf_access_buffer(prim.indices, dat, buffers);
+		
+		// TODO: slurp the vertex colour data in case ppl need it for shaders
+		
+		if (!skinned) {
+			// extract just the mesh
+			var m = generateMesh(v, vn, vt, indices);
+			__store_mesh(name, m, i, textures[i], dims);
+		}
+		else {
+			// if the mesh is skinned,
+			// extract JOINTS_0 and WEIGHTS_0 for the skinning matrix
+			var joints = __gltf_access_buffer(a.JOINTS_0, dat, buffers);
+			var weights = __gltf_access_buffer(a.WEIGHTS_0, dat, buffers);
+			var m = generateSkinnedMesh(v, vn, vt, indices, joints, weights);
+			__store_mesh(name, m, i, textures[i], dims);
+		}
+	}
+	
+	if (skinned) {
+		var skin = dat.skins[skinID];
+		var inverseBindMatrices = __gltf_access_buffer(skin.inverseBindMatrices, dat, buffers);
+		var joints = skin.joints;
+		var jointsCount = array_length(joints);
+		var parentJoints = array_create(jointsCount, undefined);
+		
+		// reverse the joint node/indices for easy lookup
+		var jointNodeMap = array_create(array_length(nodes), undefined);
+		for (var j = 0; j < jointsCount; j++) {
+			jointNodeMap[joints[j]] = j;
+		}
+		
+		// build joint parent hierarchy
+		for (var j = 0; j < jointsCount; j++) {
+			var node = nodes[joints[j]];
+			var children = node[$ "children"];
+			if (!is_undefined(children)) {
+				for (var k = 0; k < array_length(children); k++) {
+					var child = children[k]; // this is NODE array pointer
+					var childInd = jointNodeMap[child]; // this is the JOINT ARRAY INDEX
+					parentJoints[childInd] = j; // PLEASE LET THIS FUCKIONG BE CORRECT
+				}
+			}
+		}
+		
+		var skinData = new __skin_data(skin.name, mesh.name);
+		skinData.textures = textures; // this isnt great, the skin data should pull the textures from mesh/primitive data but oh well
+		for (var j = 0; j < jointsCount; j++) {
+			var node = nodes[joints[j]];
+			
+			//var T = node[$ "translation"] ?? [0, 0, 0];
+			//var R = node[$ "rotation"] ?? [0, 0, 0, 1];
+			//var S = node[$ "scale"] ?? [1, 1, 1];
+			
+			var T = node[$ "translation"];// ?? [0, 0, 0];
+			var R = node[$ "rotation"];// ?? [0, 0, 0, 1];
+			var S = node[$ "scale"];// ?? [1, 1, 1];
+				
+			//var M = matrix_build_quaternion(T[0], T[1], T[2], R, S[0], S[1], S[2]);
+			
+			/*		https://lisyarus.github.io/blog/posts/gltf-animation.html
+			
+				bones without a corresponding transform in the animation will have incorrect "default" state
+			
+			*/
+			
+			var bAnim = undefined;
+			if (!is_undefined(animData)) {
+				bAnim = animData[joints[j]];
+			}
+			
+			var boneName = node.name;
+			
+			var restPose = new poseTriple(T, R, S);
+			var M = restPose.toMatrix();
+			
+			skinData.addBone(parentJoints[j], M, inverseBindMatrices[j], boneName, restPose, bAnim);
+		}
+	}
+}
+
+function __gltf_access_buffer(accessorID, dat, buffers) {
+	static typeComponentCount = {
+		"SCALAR" :	1,
+		"VEC2" :	2,
+		"VEC3" :	3,
+		"VEC4" :	4,
+		"MAT2" :	4,
+		"MAT3" :	9,
+		"MAT4" :	16,
+	};
+	
+	static typeIDs = {
+		"_5126" : buffer_f32,
+		"_5123" : buffer_u16,
+		"_5121" : buffer_u8,
+	};
+	
+	var ac = dat.accessors[accessorID];
+	var type = ac.type;
+	var comp = ac.componentType;
+	var count = ac.count;
+	
+	var bv = dat.bufferViews[ac.bufferView];
+	var byteLength = bv.byteLength;
+	var byteOffset = bv.byteOffset;
+	//var target = bv[$ target]; // array buff or element array buff
+	
+	var buff = buffers[bv.buffer];
+	
+	buffer_seek(buff, buffer_seek_start, byteOffset);
+	
+	var ret = [ ];
+	
+	var t = typeIDs[$ "_"+string(comp)];
+	var dim = typeComponentCount[$ type];
+	// if (dim == 1) - array of scalars instead of array of arrays?
+	if (dim == 1) {
+		for (var i = 0; i < count; i++) {
+			ret[i] = buffer_read(buff, t);
+		}
+	}
+	else {
+		for (var i = 0; i < count; i++) {
+			ret[i] = [ ];
+			for (var j = 0; j < dim; j++) {
+				ret[i][j] = buffer_read(buff, t);
+			}
+		}
+	}
+	
+	return ret;
+}
+
+/// dump image to %localappdata%\{Project Name}\dat\ for loading
+function __gltf_buffer_export_image(imageID, dat, buffers, overwrite=false) {
+	var img = dat.images[dat.textures[imageID].source];
+	var mimeType = img.mimeType;
+	var fileType = string_delete(mimeType, 1, string_pos("/", mimeType));
+	var fname = "dat\\"+img.name+"."+fileType;
+	
+	if (!file_exists(fname) || overwrite) {
+		var bv = dat.bufferViews[img.bufferView];
+	
+		var byteLength = bv.byteLength;
+		var byteOffset = bv.byteOffset;
+		
+		var buff = buffers[bv.buffer];
+	
+		buffer_seek(buff, buffer_seek_start, byteOffset);
+	
+		var imgdat = buffer_create(byteLength, buffer_fixed, 1);
+		
+		buffer_copy(buff, byteOffset, byteLength, imgdat, 0);
+		
+		buffer_save(imgdat, fname);
+		
+		buffer_delete(imgdat);
+	}
+	return fname;
+}
+
+/// generate a vertex buffer for use with pr_trianglelist.
+/// contains vertex positions, normals, texture coords
+function generateMesh(v, vn, vt, indices) {
+	var buff = vertex_create_buffer();
+	vertex_begin(buff, __vertexformat__());
+	
+	var n = array_length(indices);
+	for (var i = 0; i < n; i++) {
+		var k = indices[i];
+		vertex_position_3d(buff, v[k][0], v[k][1], v[k][2]);
+		vertex_normal(buff, vn[k][0], vn[k][1], vn[k][2]);
+		vertex_texcoord(buff, vt[k][0], vt[k][1]);
+		vertex_color(buff, c_white, 1);
+	}
+	
+	vertex_end(buff);
+	vertex_freeze(buff);
+	return buff;
+}
+
+/// generate a vertex buffer for use with pr_trianglelist.
+/// contains vertex positions, normals, texture coords, joint weight data
+function generateSkinnedMesh(v, vn, vt, indices, joints, weights) {
+	var buff = vertex_create_buffer();
+	vertex_begin(buff, __vertexformat__(true));
+	
+	var n = array_length(indices);
+	for (var i = 0; i < n; i++) {
+		var k = indices[i];
+		vertex_position_3d(buff, v[k][0], v[k][1], v[k][2]);
+		vertex_normal(buff, vn[k][0], vn[k][1], vn[k][2]);
+		vertex_texcoord(buff, vt[k][0], vt[k][1]);
+		vertex_float4(buff, joints[k][0], joints[k][1], joints[k][2], joints[k][3]);
+		vertex_float4(buff, weights[k][0], weights[k][1], weights[k][2], weights[k][3]);
+		vertex_color(buff, c_white, 1);
+	}
+	
+	vertex_end(buff);
+	vertex_freeze(buff);
+	return buff;
+}
+
+/// get vertex buffer of [index]th primitive of mesh
+function getMesh(name, index=0) {
+	return __meshes__()[$ name].primitives[index].vbuff;
+}
+
+/// get default texture of [index]th primitive of mesh
+function meshTexture(meshName, index) {
+	return __meshes__()[$ name].primitives[index].tex;
+}
+
+/// returns array of mesh primitives [{vbuff, tex, uv}]
+function getMeshPrimitives(name) {
+	return __meshes__()[$ name].primitives;
+}
+
+/// draw a mesh. can optionally override textures each primitive uses
+function drawMesh(name, textures=[]) {
+	var prims = getMeshPrimitives(name);
+	var texCount = array_length(textures);
+	var i = 0; repeat(array_length(prims)) {
+		var prim = prims[i++];
+		var tex = (i < texCount) ? textures[i] : prim.texture;
+		vertex_submit(prim.vbuff, pr_trianglelist, tex);
+	}
+}
+
+/// how many primitives does a mesh have - essentially how many times is the mesh broken up for different materials
+function meshPrimitiveCount(name) {
+	return array_length(__meshes__()[$ name].primitives);
+}
+
+/// get size of bounding box of mesh as vec(x,y,z)
+function meshSize(name) {
+	return __meshes__()[$ name].sizeGet();
+}
+
+/// get midpoint of bounding box of a mesh
+function meshMidpoint(name) {
+	return __meshes__()[$ name].dimensions.midPoint();
+}
+
+
+/**
+ * Function Description
+ * @param {String} name Description
+ * @param {Id.VertexBuffer} vbuff Description
+ * @param {real} [index]=0 primitiveID
+ * @param {Pointer.Texture} [tex]=-1 Description
+ * @param {Struct.aabb} [dims] dimensions
+ */
+function __store_mesh(name, vbuff, index, tex, dims) {
+	var meshes = __meshes__();
+	if (is_undefined(meshes[$ name])) {
+		meshes[$ name] = new __mesh_info(name);
+	}
+	var mesh = meshes[$ name];
+	mesh.primitives[index] = new __mesh_primitive(vbuff, tex);
+	if (!is_undefined(dims)) {
+		mesh.sizeExpand(dims.v1, dims.v2);
+	}
+}
+
+/// prints all mesh names to console. they are stored in a struct so the order is not guaranteed
+function listMeshes() {
+	var meshes = __meshes__();
+	var names = variable_struct_get_names(meshes);
+	for (var i = 0; i < array_length(names); i++) {
+		//debugPrint("mesh {0} is called {1}", [ i, names[i] ]);
+		// do a normal print statement so this still works when GLTF_DEBUG is false
+		show_debug_message(string_ext("mesh {0} is called {1}", [ i, names[i] ]));
+	}
+}
+
+/// singleton to store mesh data
+function __meshes__() {
+	static meshes = { };
+	return meshes;
+}
+
+/// stores convenient info about a mesh like bounding box and textures
+function __mesh_info(_name, _primitives=[], _info={}) constructor {
+	name = _name;
+	primititives = _primitives;
+	
+	// default values
+	dimensions = undefined; // will store an AABB with min & max size
+	
+	structCopy(self, _info);
+	
+	/// get arbitrary value
+	static get = function(valueName) {
+		return self[$ valueName];
+	};
+	
+	static sizeExpand = function(vMin, vMax) {
+		if (is_undefined(dimensions)) {
+			dimensions = new aabb(vMin, vMax);
+		}
+		else {
+			dimensions.expand(vMin, vMax);
+		}
+	};
+	
+	/// returns vec3 of the size of the bounding box
+	static sizeGet = function() {
+		return dimensions.size();
+	};
+}
+
+/// @desc  simple data structure for a primitive of a mesh
+/// @param {Id.VertexBuffer} _vbuff Description
+/// @param {Pointer.Texture} _texture Description
+/// @param {array<real>} [_uvs] Description
+function __mesh_primitive(_vbuff, _texture, _uvs=[0,0,1,1]) constructor {
+	vbuff = _vbuff;
+	texture = _texture;
+	uvs = _uvs;
+}
+
+/// default vertex formats
+function __vertexformat__(skinned=false) {
+	static format = (function() {
+		vertex_format_begin();
+		vertex_format_add_position_3d();
+		vertex_format_add_normal();
+		vertex_format_add_texcoord();
+		vertex_format_add_color();
+		return vertex_format_end();
+	})();
+	static format2 = (function() {
+		vertex_format_begin();
+		vertex_format_add_position_3d();
+		vertex_format_add_normal();
+		vertex_format_add_texcoord();
+		vertex_format_add_custom(vertex_type_float4, vertex_usage_texcoord); // INDICES
+		vertex_format_add_custom(vertex_type_float4, vertex_usage_texcoord); // WEIGHTS
+		vertex_format_add_color();
+		return vertex_format_end();
+	})();
+	return skinned ? format2 : format;
+}
