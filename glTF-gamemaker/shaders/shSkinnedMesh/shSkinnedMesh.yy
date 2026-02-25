@@ -1,10 +1,12 @@
 {
-  "resourceType": "GMShader",
-  "resourceVersion": "1.0",
-  "name": "shSkinnedMesh",
-  "type": 1,
-  "parent": {
-    "name": "Shaders",
-    "path": "folders/gltfParser/Shaders.yy",
+  "$GMShader":"",
+  "%Name":"shSkinnedMesh",
+  "name":"shSkinnedMesh",
+  "parent":{
+    "name":"Shaders",
+    "path":"folders/gltfParser/Shaders.yy",
   },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
 }

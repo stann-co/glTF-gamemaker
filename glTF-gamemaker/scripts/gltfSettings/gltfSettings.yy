@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "gltfSettings",
-  "isDnD": false,
-  "isCompatibility": false,
-  "parent": {
-    "name": "Scripts",
-    "path": "folders/gltfParser/Scripts.yy",
+  "$GMScript":"v1",
+  "%Name":"gltfSettings",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"gltfSettings",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/gltfParser/Scripts.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

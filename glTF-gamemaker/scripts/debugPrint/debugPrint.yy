@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "debugPrint",
-  "isDnD": false,
-  "isCompatibility": false,
-  "parent": {
-    "name": "Scripts",
-    "path": "folders/gltfParser/Scripts.yy",
+  "$GMScript":"v1",
+  "%Name":"debugPrint",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"debugPrint",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/gltfParser/Scripts.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "pcgMeshes",
-  "isDnD": false,
-  "isCompatibility": false,
-  "parent": {
-    "name": "Scripts",
-    "path": "folders/gltfParser/Scripts.yy",
+  "$GMScript":"v1",
+  "%Name":"pcgMeshes",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"pcgMeshes",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/gltfParser/Scripts.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }
