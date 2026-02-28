@@ -1,6 +1,6 @@
 gltfLoad("Arrows.gltf");
 
-skin = new skinnedMesh("Arrows");
+skin = new gltfSkinnedMesh("Arrows");
 skin.setAnimation("Move");
 skin.animate(0);
 
@@ -14,5 +14,5 @@ tMin = 0;
 tMax = skin.getAnimationLength();
 
 draw = function() {
-	skin.draw(gltfSettings().defaultShader);
+	skin.draw(exampleGltfSettings().defaultShader);
 };

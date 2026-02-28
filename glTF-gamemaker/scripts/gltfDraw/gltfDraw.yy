@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"shaderHelpers",
+  "%Name":"gltfDraw",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"shaderHelpers",
+  "name":"gltfDraw",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"gltfParser",
+    "path":"folders/gltfParser.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

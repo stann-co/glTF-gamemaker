@@ -1,7 +1,7 @@
 function meshGrid(w, h, col=c_white, alpha=1) {
 	// floor grid mdl
 	var mesh = vertex_create_buffer();
-	vertex_begin(mesh, __vertex_format_wire());
+	vertex_begin(mesh, __gltfVertexFormatWire());
 	var n = 10;
 	for (var i = 0; i < w+1; i++) {
 		vertex_position_3d(mesh, i, 0, 0);

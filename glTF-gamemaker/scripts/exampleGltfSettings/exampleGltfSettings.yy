@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"shaderHelpers",
+  "%Name":"exampleGltfSettings",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"shaderHelpers",
+  "name":"exampleGltfSettings",
   "parent":{
     "name":"Scripts",
     "path":"folders/Scripts.yy",

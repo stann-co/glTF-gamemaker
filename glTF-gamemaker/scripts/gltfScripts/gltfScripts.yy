@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"gltfScripts",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/gltfParser/Scripts.yy",
+    "name":"gltfParser",
+    "path":"folders/gltfParser.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

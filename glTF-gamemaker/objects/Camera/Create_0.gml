@@ -4,9 +4,9 @@ if (instance_number(Camera) > 1) {
 	exit;
 }
 
-pos = new vec4(0, 0, -1000);
+pos = new __gltfVec4(0, 0, -1000);
 //pos = new vec4(0, 0, -10);
-dir = new vec4(0, 0.05, -sign(pos.z));
+dir = new __gltfVec4(0, 0.05, -sign(pos.z));
 
 rot = 0;
 
@@ -15,7 +15,7 @@ reset = function() {
 	rot = 0;
 };
 
-up = new vec3();
+up = new __gltfVec3();
 setUp = function(_up="y", _sgn=1) {
 	up.scale(0);
 	up[$ _up] = sign(_sgn);

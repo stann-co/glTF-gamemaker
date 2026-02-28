@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"shGltfMeshWeights",
+  "name":"shGltfMeshWeights",
+  "parent":{
+    "name":"shaders",
+    "path":"folders/gltfParser/shaders.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

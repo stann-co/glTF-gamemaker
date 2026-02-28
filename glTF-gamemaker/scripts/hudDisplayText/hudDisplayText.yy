@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"shaderHelpers",
+  "%Name":"hudDisplayText",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"shaderHelpers",
+  "name":"hudDisplayText",
   "parent":{
     "name":"Scripts",
     "path":"folders/Scripts.yy",

@@ -18,7 +18,7 @@
   "name":"r98_stress",
   "parent":{
     "name":"Rooms",
-    "path":"folders/gltfParser/Rooms.yy",
+    "path":"folders/Rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

@@ -6,7 +6,7 @@
   "name":"__gltf_init__",
   "parent":{
     "name":"Scripts",
-    "path":"folders/gltfParser/Scripts.yy",
+    "path":"folders/Scripts.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

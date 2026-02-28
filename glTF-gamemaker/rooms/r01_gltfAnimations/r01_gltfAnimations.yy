@@ -20,7 +20,7 @@
   "name":"r01_gltfAnimations",
   "parent":{
     "name":"Rooms",
-    "path":"folders/gltfParser/Rooms.yy",
+    "path":"folders/Rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

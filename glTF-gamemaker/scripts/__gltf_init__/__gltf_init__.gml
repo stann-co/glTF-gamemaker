@@ -1,4 +1,4 @@
-#macro GLTF_DEBUG (true)
+
 
 function __gltf_init__() {
 	gml_pragma("global", "__gltf_init__()");

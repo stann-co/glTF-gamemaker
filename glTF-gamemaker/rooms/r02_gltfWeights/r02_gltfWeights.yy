@@ -20,7 +20,7 @@
   "name":"r02_gltfWeights",
   "parent":{
     "name":"Rooms",
-    "path":"folders/gltfParser/Rooms.yy",
+    "path":"folders/Rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

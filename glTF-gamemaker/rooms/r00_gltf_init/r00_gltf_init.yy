@@ -18,7 +18,7 @@
   "name":"r00_gltf_init",
   "parent":{
     "name":"Rooms",
-    "path":"folders/gltfParser/Rooms.yy",
+    "path":"folders/Rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

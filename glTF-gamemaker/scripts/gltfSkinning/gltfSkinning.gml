@@ -1,9 +1,6 @@
-// note: max bones needs to be increased in the shader code or game will silently crash
-#macro MAXIMUM_BONES (24)
-
 /// skinned mesh instance
-function skinnedMesh(skinName) constructor {
-	var skins = __skins();
+function gltfSkinnedMesh(skinName) constructor {
+	var skins = __gltfSkins();
 	skin = undefined;
 	mesh = undefined;
 	for (var i = 0; i < array_length(skins); i++) {
@@ -21,7 +18,7 @@ function skinnedMesh(skinName) constructor {
 	}
 	
 	// foreach primitive in mesh, get default texture
-	primitives = meshPrimitiveCount(mesh);
+	primitives = gltfMeshPrimitiveCount(mesh);
 	texture = array_create(primitives, -1);
 	for (var i = 0; i < primitives; i++) {
 		if (i < array_length(skin.textures)) {
@@ -98,7 +95,7 @@ function skinnedMesh(skinName) constructor {
 			else {
 				// 
 				//localTransform[i] = mulMats(t, data[i][1]);
-				array_copy(localTransform[i], 0, mulMats(data[i][1], t), 0, 16);
+				array_copy(localTransform[i], 0, __gltfMulMats(data[i][1], t), 0, 16);
 			}
 		}
 		
@@ -113,12 +110,12 @@ function skinnedMesh(skinName) constructor {
 			}
 			else {
 				//modelTransform[i] = mulMats(modelTransform[parentNode], localTransform[i]);
-				array_copy(modelTransform[i], 0, mulMats(modelTransform[parentNode], localTransform[i]), 0, 16);
+				array_copy(modelTransform[i], 0, __gltfMulMats(modelTransform[parentNode], localTransform[i]), 0, 16);
 			}
 		}
 		
 		for (var i = 0; i < min(skin.bones, MAXIMUM_BONES); i++) {
-			var m = mulMats(modelTransform[i], data[i][2]);
+			var m = __gltfMulMats(modelTransform[i], data[i][2]);
 			array_copy(_out, i*16, m, 0, 16);
 		}
 		
@@ -128,10 +125,10 @@ function skinnedMesh(skinName) constructor {
 	
 	/**
 	 * draw the mesh. bone pose information and custom textures from this instance are automatically used
-	 * @param {asset.GMShader} [shader]=shSkinnedMesh custom shader
+	 * @param {asset.GMShader} [shader]=shGltfSkinnedMesh custom shader
 	 * @param {array<Struct.shaderUniform>} [uniforms]=[] additional uniforms if needed with shader (see structs in shaderHelpers)
 	 */
-	static draw = function(shader=shSkinnedMesh, uniforms=[]) {
+	static draw = function(shader=shGltfSkinnedMesh, uniforms=[]) {
 		shader_set(shader);
 		// all skin draw shaders MUST have a u_bones matrix array uniform
 		var uBones = shader_get_uniform(shader, "uBones");
@@ -143,7 +140,7 @@ function skinnedMesh(skinName) constructor {
 		}
 		
 		for (var i = 0; i < primitives; i++) {
-			vertex_submit(getMesh(mesh, i), pr_trianglelist, texture[i]);
+			vertex_submit(gltfGetMesh(mesh, i), pr_trianglelist, texture[i]);
 		}
 		shader_reset();
 	};
@@ -208,7 +205,7 @@ function skinnedMesh(skinName) constructor {
 	static debugDrawBones = function() {
 		var buff = vertex_create_buffer();
 		
-		vertex_begin(buff, __vertex_format_wire());
+		vertex_begin(buff, __gltfVertexFormatWire());
 		
 		for (var i = 1; i < skin.bones; i++) {
 			var par = skin.data[i][0];
@@ -241,7 +238,7 @@ function skinnedMesh(skinName) constructor {
 }
 
 /// data structure containing all relevant info about a loaded skinned mesh
-function __skin_data(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
+function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
 	// array of [PARENT] [LOCAL TRANSFORM] [INVERSE BIND MATRIX]
 	data = array_create(_boneCount);
 	// create arrays at the start so they are (hopefully) sequential in memory
@@ -261,17 +258,17 @@ function __skin_data(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
 	
 	animLength = { };
 	textures = [ ];
-	size = meshSize(meshName);
+	size = gltfMeshSize(meshName);
 	
-	debugPrint("storing new skin {0}, {1}", [ skinName, meshName ]);
+	__gltfDebugPrint("storing new skin {0}, {1}", [ skinName, meshName ]);
 	
-	array_push(__skins(), self);
+	array_push(__gltfSkins(), self);
 	
 	bones = 0;
 	
 	static getBoneIndex = function(bName) {
 		if (is_undefined(boneNamesMap)) {
-			boneNamesMap = bimap(boneNames);
+			boneNamesMap = __gltfBimap(boneNames);
 		}
 		return boneNamesMap[$ bName];
 	};
@@ -304,7 +301,7 @@ function __skin_data(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
 					var cname = cnames[j];
 					var isRotation = (cname == "rotation");
 					var ca = anim[$ cname];
-					var s = new animationSampler(ca.in, ca.out, ca.interp, isRotation);
+					var s = new gltfAnimationSampler(ca.in, ca.out, ca.interp, isRotation);
 					animSamplers[bones][$ name][$ cname] = s;
 					animLength[$ name] = animLength[$ name] ?? 0;
 					animLength[$ name] = max(animLength[$ name], s.tMax);
@@ -338,7 +335,7 @@ function __skin_data(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
 				undefined :
 				S.get(t);
 			
-			result[i] = new poseTriple(T, R, S);
+			result[i] = new gltfPoseTriple(T, R, S);
 			
 			// TODO: return T,R,S values instead of a matrix
 			// so i can blend animations easily
@@ -349,7 +346,7 @@ function __skin_data(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
 }
 
 /// @returns {Array<Struct.__skin_data>}
-function __skins() {
+function __gltfSkins() {
 	static skins = [ ];
 	return skins;
 }
@@ -360,8 +357,8 @@ function __skins() {
  * @param {String} name
  * @returns {Struct.__skin_data}
  */
-function getSkin(name) {
-	var skins = __skins();
+function gltfGetSkin(name) {
+	var skins = __gltfSkins();
 	for (var i = 0; i < array_length(skins); i++) {
 		var skin = skins[i];
 		if (skin.skinName == name) {
@@ -373,7 +370,7 @@ function getSkin(name) {
 }
 
 /// simple vertex format for drawing wireframe
-function __vertex_format_wire() {
+function __gltfVertexFormatWire() {
 	static format = (function() {
 		vertex_format_begin();
 		vertex_format_add_position_3d();
@@ -384,7 +381,7 @@ function __vertex_format_wire() {
 }
 
 /// helper for generating pose data by lerping between keyframes
-function animationSampler(_keyframes, _values, _interp, _isRotation=true) constructor {
+function gltfAnimationSampler(_keyframes, _values, _interp, _isRotation=true) constructor {
 	keyframes = _keyframes;
 	values = _values;
 	interp = _interp;
@@ -393,7 +390,7 @@ function animationSampler(_keyframes, _values, _interp, _isRotation=true) constr
 	isRotation = _isRotation;
 	
 	tMin = 0;
-	tMax = arrayLast(keyframes);
+	tMax = __gltfArrayLast(keyframes);
 	n = array_length(keyframes);
 	
 	lerpFunc = undefined;
@@ -409,14 +406,14 @@ function animationSampler(_keyframes, _values, _interp, _isRotation=true) constr
 			case "LINEAR":
 				if (isRotation) {
 					lerpFunc = function(i, t) {
-						var tween = invlerp(keyframes[i], keyframes[i+1], t);
-						return slerp(values[i], values[i+1], tween);
+						var tween = __gltfInvlerp(keyframes[i], keyframes[i+1], t);
+						return __gltfSlerp(values[i], values[i+1], tween);
 					};
 				}
 				else {
 					lerpFunc = function(i, t) {
-						var tween = invlerp(keyframes[i], keyframes[i+1], t);
-						return lerpArray(values[i], values[i+1], tween);
+						var tween = __gltfInvlerp(keyframes[i], keyframes[i+1], t);
+						return __gltfLerpArray(values[i], values[i+1], tween);
 					};
 				}
 				break;
@@ -447,7 +444,7 @@ function animationSampler(_keyframes, _values, _interp, _isRotation=true) constr
 					
 					var dim = array_length(vk);
 					
-					var vf = (dim==4) ? arrayToVec : arrayToVec3;
+					var vf = (dim==4) ? __gltfArrayToVec : __gltfArrayToVec3;
 					
 					var vt =	  (vf(vk).scale(2*t3-3*t2+1))
 						.translate(vf(bk).scale(td*(t3-2*t2+t)))
@@ -466,7 +463,7 @@ function animationSampler(_keyframes, _values, _interp, _isRotation=true) constr
 	static get = function(time) {
 		// base cases - no animation or only one frame
 		if (n == 0) {
-			debugPrint("there is an animation with no frames!");
+			__gltfDebugPrint("there is an animation with no frames!");
 			return undefined;
 		}
 		if (n == 1) return values[0];
@@ -483,13 +480,13 @@ function animationSampler(_keyframes, _values, _interp, _isRotation=true) constr
 	};
 	
 	static toString = function() {
-		return string_ext("bone animationSampler: {0}: {1} -> {2}", [ interp, string(keyframes), string(values) ]);
+		return string_ext("bone gltfAnimationSampler: {0}: {1} -> {2}", [ interp, string(keyframes), string(values) ]);
 	};
 }
 
 /// mostly relevant for blending animations together, contains 3 arrays
 /// T,R,S - translation[3], rotationQuat[4] OR rotationEuler[3], scale[3]
-function poseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
+function gltfPoseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 	// any of these values can be undefined
 	// which is important when blending only bones with animation data
 	T = _t;
@@ -498,7 +495,7 @@ function poseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 	
 	// convert R to quaternion as this is what the model file knows and how rotations are blended together
 	// u can get model rotations in euler from the skinnedMesh class
-	if (!is_undefined(R) && array_length(R) == 3) R = angle_to_quaternion(R[0], R[1], R[2]);
+	if (!is_undefined(R) && array_length(R) == 3) R = __gltfAngleToQuaternion(R[0], R[1], R[2]);
 	
 	/// T0,R0,S0 inputs are fallback values if any of the pose properties are undefined,
 	/// eg the default local transform of an armature
@@ -511,7 +508,7 @@ function poseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 		var R1 = (R ?? R0) ?? [ 0, 0, 0, 1 ];
 		var S1 = (S ?? S0) ?? [ 1, 1, 1 ];
 		
-		return matrix_build_quaternion(T1[0], T1[1], T1[2], R1, S1[0], S1[1], S1[2]);
+		return __gltfMatrixBuildQuaternion(T1[0], T1[1], T1[2], R1, S1[0], S1[1], S1[2]);
 	};
 	
 	/// blend pose with a 2nd pose with factor (0 <= time <= 1)
@@ -521,16 +518,16 @@ function poseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 		
 		if (is_undefined(T)) T1 = p2.T;
 		else if (is_undefined(p2.T)) T1 = T;
-		else T1 = lerpArray(T, p2.T, time);
+		else T1 = __gltfLerpArray(T, p2.T, time);
 		
 		if (is_undefined(R)) R1 = p2.R;
 		else if (is_undefined(p2.R)) R1 = R;
-		else R1 = slerp(R, p2.R, time);
+		else R1 = __gltfSlerp(R, p2.R, time);
 		
 		if (is_undefined(S)) S1 = p2.S;
 		else if (is_undefined(p2.S)) S1 = S;
-		else S1 = lerpArray(S, p2.S, time);
+		else S1 = __gltfLerpArray(S, p2.S, time);
 		
-		return new poseTriple(T1, R1, S1);
+		return new gltfPoseTriple(T1, R1, S1);
 	};
 }

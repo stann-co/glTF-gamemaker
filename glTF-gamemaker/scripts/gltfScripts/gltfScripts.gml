@@ -6,7 +6,7 @@ function gltfLoad(fname) {
 		return results[$ fname];
 	}
 	
-	var dat = loadStructFromFile(fname);
+	var dat = __gltfLoadStructFromFile(fname);
 	
 	// returned struct which stores the names of all meshes and skinnedMeshes
 	var result = {
@@ -57,7 +57,7 @@ function gltfLoad(fname) {
 			var channels = animations[i][$ "channels"];
 			var name = animations[i].name;
 			
-			debugPrint("animation {0} name is {1}!", [ i, name ?? "missing" ]);
+			__gltfDebugPrint("animation {0} name is {1}!", [ i, name ?? "missing" ]);
 			
 			for (var j = 0; j < array_length(channels); j++) {
 				var c = channels[j];
@@ -71,8 +71,8 @@ function gltfLoad(fname) {
 				var sInterp = sampler[$ "interpolation"];
 				
 				var bAnim = {
-					in : __gltf_access_buffer(sInput, dat, buffers), // keyframe
-					out : __gltf_access_buffer(sOutput, dat, buffers), // transform information
+					in : __gltfAccessBuffer(sInput, dat, buffers), // keyframe
+					out : __gltfAccessBuffer(sOutput, dat, buffers), // transform information
 					interp : sInterp,
 				};
 				
@@ -90,13 +90,13 @@ function gltfLoad(fname) {
 			var skinID = node[$ "skin"];
 			if (is_undefined(skinID)) {
 				// load mesh
-				__gltf_load_mesh(dat, buffers, meshID);
+				__gltfLoadMesh(dat, buffers, meshID);
 				// store name for returning
 				array_push(result.meshes, dat.meshes[meshID].name);
 			}
 			else {
 				// load skinned mesh
-				__gltf_load_mesh(dat, buffers, meshID, skinID, boneAnimationData);
+				__gltfLoadMesh(dat, buffers, meshID, skinID, boneAnimationData);
 				// store name for returning
 				array_push(result.skinnedMeshes, dat.skins[skinID].name);
 			}
@@ -115,7 +115,7 @@ function gltfLoad(fname) {
 }
 
 /// called automatically by gltfLoad()
-function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undefined) {
+function __gltfLoadMesh(dat, buffers, meshID, skinID=undefined, animData=undefined) {
 	var nodes = dat.nodes;
 	
 	var mesh = dat.meshes[meshID];
@@ -130,7 +130,7 @@ function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undef
 		var prim = mesh.primitives[i];
 		var a = prim.attributes;
 		
-		textures[i] = sprite_get_texture(sprCube, 0);
+		textures[i] = sprite_get_texture(__gltfSprCube, 0);
 		
 		// are there images?
 		var mat = prim[$ "material"];
@@ -157,8 +157,8 @@ function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undef
 			if (!is_undefined(roughness)) {
 				if (!is_undefined(roughness[$ "baseColorTexture"])) {
 					mat = roughness.baseColorTexture.index;
-					var fname = __gltf_buffer_export_image(mat, dat, buffers, false);
-					textures[i] = getTexture(fname);
+					var fname = __gltfBufferExportImage(mat, dat, buffers, false);
+					textures[i] = __gltfGetTexture(fname);
 				}
 			}
 		}
@@ -179,37 +179,37 @@ function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undef
 		var aPos = a.POSITION;
 		var dMin = dat.accessors[aPos].min;
 		var dMax = dat.accessors[aPos].max;
-		debugPrint("dMin: {0}, dMax: {1}", [ string(dMin), string(dMax) ]);
-		var dims = new aabb(arrayToVec3(dMin), arrayToVec3(dMax));
-		debugPrint("dimensions of primitive {0}: {1}", [ i, string(dims) ]);
+		__gltfDebugPrint("dMin: {0}, dMax: {1}", [ string(dMin), string(dMax) ]);
+		var dims = new __gltfAabb(__gltfArrayToVec3(dMin), __gltfArrayToVec3(dMax));
+		__gltfDebugPrint("dimensions of primitive {0}: {1}", [ i, string(dims) ]);
 		
 		// extract v, vn, vt (vertex position, normal, texcoord)
 	
-		var v = __gltf_access_buffer(a.POSITION, dat, buffers);
-		var vn = __gltf_access_buffer(a.NORMAL, dat, buffers);
-		var vt = __gltf_access_buffer(a.TEXCOORD_0, dat, buffers);
-		var indices = __gltf_access_buffer(prim.indices, dat, buffers);
+		var v = __gltfAccessBuffer(a.POSITION, dat, buffers);
+		var vn = __gltfAccessBuffer(a.NORMAL, dat, buffers);
+		var vt = __gltfAccessBuffer(a.TEXCOORD_0, dat, buffers);
+		var indices = __gltfAccessBuffer(prim.indices, dat, buffers);
 		
 		// TODO: slurp the vertex colour data in case ppl need it for shaders
 		
 		if (!skinned) {
 			// extract just the mesh
-			var m = generateMesh(v, vn, vt, indices);
-			__store_mesh(name, m, i, textures[i], dims);
+			var m = __gltfGenerateMesh(v, vn, vt, indices);
+			__gltfStoreMesh(name, m, i, textures[i], dims);
 		}
 		else {
 			// if the mesh is skinned,
 			// extract JOINTS_0 and WEIGHTS_0 for the skinning matrix
-			var joints = __gltf_access_buffer(a.JOINTS_0, dat, buffers);
-			var weights = __gltf_access_buffer(a.WEIGHTS_0, dat, buffers);
-			var m = generateSkinnedMesh(v, vn, vt, indices, joints, weights);
-			__store_mesh(name, m, i, textures[i], dims);
+			var joints = __gltfAccessBuffer(a.JOINTS_0, dat, buffers);
+			var weights = __gltfAccessBuffer(a.WEIGHTS_0, dat, buffers);
+			var m = __gltfGenerateSkinnedMesh(v, vn, vt, indices, joints, weights);
+			__gltfStoreMesh(name, m, i, textures[i], dims);
 		}
 	}
 	
 	if (skinned) {
 		var skin = dat.skins[skinID];
-		var inverseBindMatrices = __gltf_access_buffer(skin.inverseBindMatrices, dat, buffers);
+		var inverseBindMatrices = __gltfAccessBuffer(skin.inverseBindMatrices, dat, buffers);
 		var joints = skin.joints;
 		var jointsCount = array_length(joints);
 		var parentJoints = array_create(jointsCount, undefined);
@@ -233,7 +233,7 @@ function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undef
 			}
 		}
 		
-		var skinData = new __skin_data(skin.name, mesh.name);
+		var skinData = new __gltfSkinData(skin.name, mesh.name);
 		skinData.textures = textures; // this isnt great, the skin data should pull the textures from mesh/primitive data but oh well
 		for (var j = 0; j < jointsCount; j++) {
 			var node = nodes[joints[j]];
@@ -261,7 +261,7 @@ function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undef
 			
 			var boneName = node.name;
 			
-			var restPose = new poseTriple(T, R, S);
+			var restPose = new gltfPoseTriple(T, R, S);
 			var M = restPose.toMatrix();
 			
 			skinData.addBone(parentJoints[j], M, inverseBindMatrices[j], boneName, restPose, bAnim);
@@ -269,7 +269,7 @@ function __gltf_load_mesh(dat, buffers, meshID, skinID=undefined, animData=undef
 	}
 }
 
-function __gltf_access_buffer(accessorID, dat, buffers) {
+function __gltfAccessBuffer(accessorID, dat, buffers) {
 	static typeComponentCount = {
 		"SCALAR" :	1,
 		"VEC2" :	2,
@@ -323,7 +323,7 @@ function __gltf_access_buffer(accessorID, dat, buffers) {
 }
 
 /// dump image to %localappdata%\{Project Name}\dat\ for loading
-function __gltf_buffer_export_image(imageID, dat, buffers, overwrite=false) {
+function __gltfBufferExportImage(imageID, dat, buffers, overwrite=false) {
 	var img = dat.images[dat.textures[imageID].source];
 	var mimeType = img.mimeType;
 	var fileType = string_delete(mimeType, 1, string_pos("/", mimeType));
@@ -352,9 +352,9 @@ function __gltf_buffer_export_image(imageID, dat, buffers, overwrite=false) {
 
 /// generate a vertex buffer for use with pr_trianglelist.
 /// contains vertex positions, normals, texture coords
-function generateMesh(v, vn, vt, indices) {
+function __gltfGenerateMesh(v, vn, vt, indices) {
 	var buff = vertex_create_buffer();
-	vertex_begin(buff, __vertexformat__());
+	vertex_begin(buff, __gltfVertexformat__());
 	
 	var n = array_length(indices);
 	for (var i = 0; i < n; i++) {
@@ -372,9 +372,9 @@ function generateMesh(v, vn, vt, indices) {
 
 /// generate a vertex buffer for use with pr_trianglelist.
 /// contains vertex positions, normals, texture coords, joint weight data
-function generateSkinnedMesh(v, vn, vt, indices, joints, weights) {
+function __gltfGenerateSkinnedMesh(v, vn, vt, indices, joints, weights) {
 	var buff = vertex_create_buffer();
-	vertex_begin(buff, __vertexformat__(true));
+	vertex_begin(buff, __gltfVertexformat__(true));
 	
 	var n = array_length(indices);
 	for (var i = 0; i < n; i++) {
@@ -393,23 +393,23 @@ function generateSkinnedMesh(v, vn, vt, indices, joints, weights) {
 }
 
 /// get vertex buffer of [index]th primitive of mesh
-function getMesh(name, index=0) {
-	return __meshes__()[$ name].primitives[index].vbuff;
+function gltfGetMesh(name, index=0) {
+	return __gltfMeshes__()[$ name].primitives[index].vbuff;
 }
 
 /// get default texture of [index]th primitive of mesh
-function meshTexture(meshName, index) {
-	return __meshes__()[$ name].primitives[index].tex;
+function gltfMeshTexture(meshName, index) {
+	return __gltfMeshes__()[$ name].primitives[index].tex;
 }
 
 /// returns array of mesh primitives [{vbuff, tex, uv}]
-function getMeshPrimitives(name) {
-	return __meshes__()[$ name].primitives;
+function gltfGetMeshPrimitives(name) {
+	return __gltfMeshes__()[$ name].primitives;
 }
 
 /// draw a mesh. can optionally override textures each primitive uses
-function drawMesh(name, textures=[]) {
-	var prims = getMeshPrimitives(name);
+function gltfDrawMesh(name, textures=[]) {
+	var prims = gltfGetMeshPrimitives(name);
 	var texCount = array_length(textures);
 	var i = 0; repeat(array_length(prims)) {
 		var prim = prims[i++];
@@ -419,18 +419,18 @@ function drawMesh(name, textures=[]) {
 }
 
 /// how many primitives does a mesh have - essentially how many times is the mesh broken up for different materials
-function meshPrimitiveCount(name) {
-	return array_length(__meshes__()[$ name].primitives);
+function gltfMeshPrimitiveCount(name) {
+	return array_length(__gltfMeshes__()[$ name].primitives);
 }
 
 /// get size of bounding box of mesh as vec(x,y,z)
-function meshSize(name) {
-	return __meshes__()[$ name].sizeGet();
+function gltfMeshSize(name) {
+	return __gltfMeshes__()[$ name].sizeGet();
 }
 
 /// get midpoint of bounding box of a mesh
-function meshMidpoint(name) {
-	return __meshes__()[$ name].dimensions.midPoint();
+function gltfMeshMidpoint(name) {
+	return __gltfMeshes__()[$ name].dimensions.midPoint();
 }
 
 
@@ -442,44 +442,44 @@ function meshMidpoint(name) {
  * @param {Pointer.Texture} [tex]=-1 Description
  * @param {Struct.aabb} [dims] dimensions
  */
-function __store_mesh(name, vbuff, index, tex, dims) {
-	var meshes = __meshes__();
+function __gltfStoreMesh(name, vbuff, index, tex, dims) {
+	var meshes = __gltfMeshes__();
 	if (is_undefined(meshes[$ name])) {
-		meshes[$ name] = new __mesh_info(name);
+		meshes[$ name] = new __gltfMeshInfo(name);
 	}
 	var mesh = meshes[$ name];
-	mesh.primitives[index] = new __mesh_primitive(vbuff, tex);
+	mesh.primitives[index] = new __gltfMeshPrimitive(vbuff, tex);
 	if (!is_undefined(dims)) {
 		mesh.sizeExpand(dims.v1, dims.v2);
 	}
 }
 
 /// prints all mesh names to console. they are stored in a struct so the order is not guaranteed
-function listMeshes() {
-	var meshes = __meshes__();
+function gltfListMeshes() {
+	var meshes = __gltfMeshes__();
 	var names = variable_struct_get_names(meshes);
 	for (var i = 0; i < array_length(names); i++) {
-		//debugPrint("mesh {0} is called {1}", [ i, names[i] ]);
+		//__gltfDebugPrint("mesh {0} is called {1}", [ i, names[i] ]);
 		// do a normal print statement so this still works when GLTF_DEBUG is false
 		show_debug_message(string_ext("mesh {0} is called {1}", [ i, names[i] ]));
 	}
 }
 
 /// singleton to store mesh data
-function __meshes__() {
+function __gltfMeshes__() {
 	static meshes = { };
 	return meshes;
 }
 
 /// stores convenient info about a mesh like bounding box and textures
-function __mesh_info(_name, _primitives=[], _info={}) constructor {
+function __gltfMeshInfo(_name, _primitives=[], _info={}) constructor {
 	name = _name;
 	primititives = _primitives;
 	
 	// default values
 	dimensions = undefined; // will store an AABB with min & max size
 	
-	structCopy(self, _info);
+	__gltfStructCopy(self, _info);
 	
 	/// get arbitrary value
 	static get = function(valueName) {
@@ -488,7 +488,7 @@ function __mesh_info(_name, _primitives=[], _info={}) constructor {
 	
 	static sizeExpand = function(vMin, vMax) {
 		if (is_undefined(dimensions)) {
-			dimensions = new aabb(vMin, vMax);
+			dimensions = new __gltfAabb(vMin, vMax);
 		}
 		else {
 			dimensions.expand(vMin, vMax);
@@ -505,14 +505,14 @@ function __mesh_info(_name, _primitives=[], _info={}) constructor {
 /// @param {Id.VertexBuffer} _vbuff Description
 /// @param {Pointer.Texture} _texture Description
 /// @param {array<real>} [_uvs] Description
-function __mesh_primitive(_vbuff, _texture, _uvs=[0,0,1,1]) constructor {
+function __gltfMeshPrimitive(_vbuff, _texture, _uvs=[0,0,1,1]) constructor {
 	vbuff = _vbuff;
 	texture = _texture;
 	uvs = _uvs;
 }
 
 /// default vertex formats
-function __vertexformat__(skinned=false) {
+function __gltfVertexformat__(skinned=false) {
 	static format = (function() {
 		vertex_format_begin();
 		vertex_format_add_position_3d();
@@ -532,4 +532,8 @@ function __vertexformat__(skinned=false) {
 		return vertex_format_end();
 	})();
 	return skinned ? format2 : format;
+}
+
+function __gltfDebugPrint(str, args=[]) {
+	if (GLTF_DEBUG) show_debug_message(string(current_time)+": "+string_ext(str, args));
 }

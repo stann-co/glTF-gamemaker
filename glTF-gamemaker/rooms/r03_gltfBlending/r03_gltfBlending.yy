@@ -20,7 +20,7 @@
   "name":"r03_gltfBlending",
   "parent":{
     "name":"Rooms",
-    "path":"folders/gltfParser/Rooms.yy",
+    "path":"folders/Rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

@@ -1,9 +1,9 @@
 World.exampleText = "animation tester";
 World.debugTextDefault = "1-9 change animation";
 
-var loaded = gltfLoad(gltfSettings().testFile);
+var loaded = gltfLoad(exampleGltfSettings().testFile);
 
-listMeshes();
+gltfListMeshes();
 
 skinned = false;
 
@@ -15,7 +15,7 @@ size = undefined;
 if (array_length(loaded.skinnedMeshes) > 0) {
 	skinned = true;
 	var name = loaded.skinnedMeshes[0];
-	testSkin = new skinnedMesh(name);
+	testSkin = new gltfSkinnedMesh(name);
 	testSkin.update();
 	testMesh = testSkin.skin.meshName;
 	
@@ -23,7 +23,7 @@ if (array_length(loaded.skinnedMeshes) > 0) {
 }
 else {
 	testMesh = loaded.meshes[0];
-	size = meshSize(testMesh);
+	size = gltfMeshSize(testMesh);
 }
 
 maxBones = 0;
@@ -37,7 +37,7 @@ draw_set_color(c_white);
 
 scale = 512 / (max(size.x, size.y));
 
-var center = meshMidpoint(testMesh);
+var center = gltfMeshMidpoint(testMesh);
 center.scale(scale);
 
 with (Camera) {
@@ -52,10 +52,10 @@ lastDigit = -1;
 
 draw = function() {
 	if (skinned) {
-		testSkin.draw(gltfSettings().defaultShader);
+		testSkin.draw(exampleGltfSettings().defaultShader);
 	}
 	else {
-		drawMesh(testMesh);
+		gltfDrawMesh(testMesh);
 	}
 };
 
