@@ -192,27 +192,6 @@ function __gltfMatBuildFromVectors(vecs=[ ]) {
 	return result;
 }
 
-/// @deprecated
-function __gltfMatToPos(m) {
-	/*
-		m[0]*v.x + m[4]*v.y +  m[8]*v.z + m[12]*v.w,
-		m[1]*v.x + m[5]*v.y +  m[9]*v.z + m[13]*v.w,
-		m[2]*v.x + m[6]*v.y + m[10]*v.z + m[14]*v.w,
-		m[3]*v.x + m[7]*v.y + m[11]*v.z + m[15]*v.w,
-	*/
-	return new __gltfVec3(
-		m[0] * m[12] + m[4] * m[13] +  m[8] * m[14],
-		m[1] * m[12] + m[5] * m[13] +  m[9] * m[14],
-		m[2] * m[12] + m[6] * m[13] + m[10] * m[14]
-	);
-	
-	//return new vec3(
-	//	m[0] * m[12] + m[1] * m[13] +  m[2] * m[14],
-	//	m[4] * m[12] + m[5] * m[13] +  m[6] * m[14],
-	//	m[8] * m[12] + m[9] * m[13] + m[10] * m[14]
-	//);
-}
-
 /// returns new vector with (x,y,z,w) equal to 0-3th elements of array
 function __gltfArrayToVec(a) {
 	gml_pragma("forceinline");

@@ -1,7 +1,7 @@
 // test draw
 draw_set_color(c_white);
 
-setIdentity();
+gltfSetIdentity();
 
 if (GLTF_DEBUG) {
 	draw_text(16, 16, debugText);

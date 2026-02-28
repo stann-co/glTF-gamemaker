@@ -20,7 +20,6 @@
     {"name":"r02_gltfWeights","order":4,"path":"rooms/r02_gltfWeights/r02_gltfWeights.yy",},
     {"name":"r03_gltfBlending","order":5,"path":"rooms/r03_gltfBlending/r03_gltfBlending.yy",},
     {"name":"r98_stress","order":3,"path":"rooms/r98_stress/r98_stress.yy",},
-    {"name":"__gltf_init__","order":1,"path":"scripts/__gltf_init__/__gltf_init__.yy",},
     {"name":"__gltfDsFunctions","order":5,"path":"scripts/__gltfDsFunctions/__gltfDsFunctions.yy",},
     {"name":"__gltfFileIO","order":6,"path":"scripts/__gltfFileIO/__gltfFileIO.yy",},
     {"name":"__gltfMath","order":3,"path":"scripts/__gltfMath/__gltfMath.yy",},

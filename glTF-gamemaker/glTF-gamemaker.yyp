@@ -55,7 +55,6 @@
     {"id":{"name":"r02_gltfWeights","path":"rooms/r02_gltfWeights/r02_gltfWeights.yy",},},
     {"id":{"name":"r03_gltfBlending","path":"rooms/r03_gltfBlending/r03_gltfBlending.yy",},},
     {"id":{"name":"r98_stress","path":"rooms/r98_stress/r98_stress.yy",},},
-    {"id":{"name":"__gltf_init__","path":"scripts/__gltf_init__/__gltf_init__.yy",},},
     {"id":{"name":"__gltfDsFunctions","path":"scripts/__gltfDsFunctions/__gltfDsFunctions.yy",},},
     {"id":{"name":"__gltfFileIO","path":"scripts/__gltfFileIO/__gltfFileIO.yy",},},
     {"id":{"name":"__gltfMath","path":"scripts/__gltfMath/__gltfMath.yy",},},

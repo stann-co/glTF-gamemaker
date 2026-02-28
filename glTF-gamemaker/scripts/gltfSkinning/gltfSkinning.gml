@@ -1,4 +1,5 @@
 /// skinned mesh instance
+/// @param {string} skinName name of skin
 function gltfSkinnedMesh(skinName) constructor {
 	var skins = __gltfSkins();
 	skin = undefined;
@@ -237,121 +238,6 @@ function gltfSkinnedMesh(skinName) constructor {
 	};
 }
 
-/// data structure containing all relevant info about a loaded skinned mesh
-function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
-	// array of [PARENT] [LOCAL TRANSFORM] [INVERSE BIND MATRIX]
-	data = array_create(_boneCount);
-	// create arrays at the start so they are (hopefully) sequential in memory
-	for (var i = 0; i < _boneCount; i++) {
-		data[i] = [
-			undefined,
-			array_create(16, 0),
-			array_create(16, 0),
-		];
-	}
-	animSamplers = [ ];
-	skinName = _name;
-	meshName = _meshName;
-	boneNames = [ ];
-	restPoses = [ ];
-	boneNamesMap = undefined;
-	
-	animLength = { };
-	textures = [ ];
-	size = gltfMeshSize(meshName);
-	
-	__gltfDebugPrint("storing new skin {0}, {1}", [ skinName, meshName ]);
-	
-	array_push(__gltfSkins(), self);
-	
-	bones = 0;
-	
-	static getBoneIndex = function(bName) {
-		if (is_undefined(boneNamesMap)) {
-			boneNamesMap = __gltfBimap(boneNames);
-		}
-		return boneNamesMap[$ bName];
-	};
-	
-	/// @desc called by gltfLoad
-	/// @param {real} par
-	/// @param {array} loc
-	/// @param {array} inv
-	/// @param {String} boneName
-	/// @param {Struct.poseTriple} restPose
-	/// @param {Struct} [animData]
-	static addBone = function(par, loc, inv, boneName, restPose, animData=undefined) {
-		data[bones][0] = par;
-		array_copy(data[bones][1], 0, loc, 0, 16);
-		array_copy(data[bones][2], 0, inv, 0, 16);
-		
-		boneNames[bones] = boneName;
-		restPoses[bones] = restPose;
-		
-		if (!is_undefined(animData)) {
-			array_push(animSamplers, { });
-			var names = variable_struct_get_names(animData);
-			for (var i = 0; i < array_length(names); i++) {
-				var name = names[i];
-				var anim = animData[$ name];
-				
-				animSamplers[bones][$ name] = { };
-				var cnames = variable_struct_get_names(anim);
-				for (var j = 0; j < array_length(cnames); j++) {
-					var cname = cnames[j];
-					var isRotation = (cname == "rotation");
-					var ca = anim[$ cname];
-					var s = new gltfAnimationSampler(ca.in, ca.out, ca.interp, isRotation);
-					animSamplers[bones][$ name][$ cname] = s;
-					animLength[$ name] = animLength[$ name] ?? 0;
-					animLength[$ name] = max(animLength[$ name], s.tMax);
-				}
-			}
-		}
-		bones++;
-		return self;
-	};
-	
-	/// this is called by a skinnedMesh instance and it returns a poseTriple
-	static animate = function(t, animName) {
-		var n = array_length(animSamplers);
-		var result = array_create(n, undefined);
-		var len = animLength[$ animName] ?? 0;
-		if (is_undefined(len)) return result;
-		if (len != 0) t %= len;
-		for (var i = 0; i < n; i++) {
-			var s = animSamplers[i][$ animName];
-			if (is_undefined(s)) s = { };
-			var T = s[$ "translation"];
-			var R = s[$ "rotation"];
-			var S = s[$ "scale"];
-			T = (is_undefined(T)) ?
-				undefined :
-				T.get(t);
-			R = (is_undefined(R)) ?
-				undefined :
-				R.get(t);
-			S = (is_undefined(S)) ?
-				undefined :
-				S.get(t);
-			
-			result[i] = new gltfPoseTriple(T, R, S);
-			
-			// TODO: return T,R,S values instead of a matrix
-			// so i can blend animations easily
-			//result[i] = matrix_build_quaternion(T[0], T[1], T[2], R, S[0], S[1], S[2]);
-		}
-		return result;
-	};
-}
-
-/// @returns {Array<Struct.__skin_data>}
-function __gltfSkins() {
-	static skins = [ ];
-	return skins;
-}
-
-
 /**
  * retrieve skin data
  * @param {String} name
@@ -369,18 +255,11 @@ function gltfGetSkin(name) {
 	//return noone;
 }
 
-/// simple vertex format for drawing wireframe
-function __gltfVertexFormatWire() {
-	static format = (function() {
-		vertex_format_begin();
-		vertex_format_add_position_3d();
-		vertex_format_add_color();
-		return vertex_format_end();
-	})();
-	return format;
-}
-
-/// helper for generating pose data by lerping between keyframes
+/**
+ * helper for generating pose data by lerping between keyframes
+ * @param {Array} _keyframes
+ * @returns {Struct.__skin_data}
+ */
 function gltfAnimationSampler(_keyframes, _values, _interp, _isRotation=true) constructor {
 	keyframes = _keyframes;
 	values = _values;
@@ -530,4 +409,129 @@ function gltfPoseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 		
 		return new gltfPoseTriple(T1, R1, S1);
 	};
+}
+
+/// data structure containing all relevant info about a loaded skinned mesh
+function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
+	// array of [PARENT] [LOCAL TRANSFORM] [INVERSE BIND MATRIX]
+	data = array_create(_boneCount);
+	// create arrays at the start so they are (hopefully) sequential in memory
+	for (var i = 0; i < _boneCount; i++) {
+		data[i] = [
+			undefined,
+			array_create(16, 0),
+			array_create(16, 0),
+		];
+	}
+	animSamplers = [ ];
+	skinName = _name;
+	meshName = _meshName;
+	boneNames = [ ];
+	restPoses = [ ];
+	boneNamesMap = undefined;
+	
+	animLength = { };
+	textures = [ ];
+	size = gltfMeshSize(meshName);
+	
+	__gltfDebugPrint("storing new skin {0}, {1}", [ skinName, meshName ]);
+	
+	array_push(__gltfSkins(), self);
+	
+	bones = 0;
+	
+	static getBoneIndex = function(bName) {
+		if (is_undefined(boneNamesMap)) {
+			boneNamesMap = __gltfBimap(boneNames);
+		}
+		return boneNamesMap[$ bName];
+	};
+	
+	/// @desc called by gltfLoad
+	/// @param {real} par
+	/// @param {array} loc
+	/// @param {array} inv
+	/// @param {String} boneName
+	/// @param {Struct.poseTriple} restPose
+	/// @param {Struct} [animData]
+	static addBone = function(par, loc, inv, boneName, restPose, animData=undefined) {
+		data[bones][0] = par;
+		array_copy(data[bones][1], 0, loc, 0, 16);
+		array_copy(data[bones][2], 0, inv, 0, 16);
+		
+		boneNames[bones] = boneName;
+		restPoses[bones] = restPose;
+		
+		if (!is_undefined(animData)) {
+			array_push(animSamplers, { });
+			var names = variable_struct_get_names(animData);
+			for (var i = 0; i < array_length(names); i++) {
+				var name = names[i];
+				var anim = animData[$ name];
+				
+				animSamplers[bones][$ name] = { };
+				var cnames = variable_struct_get_names(anim);
+				for (var j = 0; j < array_length(cnames); j++) {
+					var cname = cnames[j];
+					var isRotation = (cname == "rotation");
+					var ca = anim[$ cname];
+					var s = new gltfAnimationSampler(ca.in, ca.out, ca.interp, isRotation);
+					animSamplers[bones][$ name][$ cname] = s;
+					animLength[$ name] = animLength[$ name] ?? 0;
+					animLength[$ name] = max(animLength[$ name], s.tMax);
+				}
+			}
+		}
+		bones++;
+		return self;
+	};
+	
+	/// this is called by a skinnedMesh instance and it returns a poseTriple
+	static animate = function(t, animName) {
+		var n = array_length(animSamplers);
+		var result = array_create(n, undefined);
+		var len = animLength[$ animName] ?? 0;
+		if (is_undefined(len)) return result;
+		if (len != 0) t %= len;
+		for (var i = 0; i < n; i++) {
+			var s = animSamplers[i][$ animName];
+			if (is_undefined(s)) s = { };
+			var T = s[$ "translation"];
+			var R = s[$ "rotation"];
+			var S = s[$ "scale"];
+			T = (is_undefined(T)) ?
+				undefined :
+				T.get(t);
+			R = (is_undefined(R)) ?
+				undefined :
+				R.get(t);
+			S = (is_undefined(S)) ?
+				undefined :
+				S.get(t);
+			
+			result[i] = new gltfPoseTriple(T, R, S);
+			
+			// TODO: return T,R,S values instead of a matrix
+			// so i can blend animations easily
+			//result[i] = matrix_build_quaternion(T[0], T[1], T[2], R, S[0], S[1], S[2]);
+		}
+		return result;
+	};
+}
+
+/// @returns {Array<Struct.__skin_data>}
+function __gltfSkins() {
+	static skins = [ ];
+	return skins;
+}
+
+/// simple vertex format for drawing wireframe
+function __gltfVertexFormatWire() {
+	static format = (function() {
+		vertex_format_begin();
+		vertex_format_add_position_3d();
+		vertex_format_add_color();
+		return vertex_format_end();
+	})();
+	return format;
 }

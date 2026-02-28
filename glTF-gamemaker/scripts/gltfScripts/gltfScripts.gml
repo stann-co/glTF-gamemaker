@@ -1,4 +1,7 @@
+/// Feather disable all
+
 /// load meshes and skins from the given filename
+/// @param {string} fname file name
 function gltfLoad(fname) {
 	static results = { };
 	// dont load the same file twice
@@ -112,6 +115,47 @@ function gltfLoad(fname) {
 	
 	return result;
 	//return dat;
+}
+
+/// get vertex buffer of [index]th primitive of mesh
+function gltfGetMesh(name, index=0) {
+	return __gltfMeshes__()[$ name].primitives[index].vbuff;
+}
+
+/// get default texture of [index]th primitive of mesh
+function gltfMeshTexture(meshName, index) {
+	return __gltfMeshes__()[$ name].primitives[index].tex;
+}
+
+/// returns array of mesh primitives [{vbuff, tex, uv}]
+function gltfGetMeshPrimitives(name) {
+	return __gltfMeshes__()[$ name].primitives;
+}
+
+/// draw a mesh. can optionally override textures each primitive uses
+function gltfDrawMesh(name, textures=[]) {
+	var prims = gltfGetMeshPrimitives(name);
+	var texCount = array_length(textures);
+	var i = 0; repeat(array_length(prims)) {
+		var prim = prims[i++];
+		var tex = (i < texCount) ? textures[i] : prim.texture;
+		vertex_submit(prim.vbuff, pr_trianglelist, tex);
+	}
+}
+
+/// how many primitives does a mesh have - essentially how many times is the mesh broken up for different materials
+function gltfMeshPrimitiveCount(name) {
+	return array_length(__gltfMeshes__()[$ name].primitives);
+}
+
+/// get size of bounding box of mesh as vec(x,y,z)
+function gltfMeshSize(name) {
+	return __gltfMeshes__()[$ name].sizeGet();
+}
+
+/// get midpoint of bounding box of a mesh
+function gltfMeshMidpoint(name) {
+	return __gltfMeshes__()[$ name].dimensions.midPoint();
 }
 
 /// called automatically by gltfLoad()
@@ -391,48 +435,6 @@ function __gltfGenerateSkinnedMesh(v, vn, vt, indices, joints, weights) {
 	vertex_freeze(buff);
 	return buff;
 }
-
-/// get vertex buffer of [index]th primitive of mesh
-function gltfGetMesh(name, index=0) {
-	return __gltfMeshes__()[$ name].primitives[index].vbuff;
-}
-
-/// get default texture of [index]th primitive of mesh
-function gltfMeshTexture(meshName, index) {
-	return __gltfMeshes__()[$ name].primitives[index].tex;
-}
-
-/// returns array of mesh primitives [{vbuff, tex, uv}]
-function gltfGetMeshPrimitives(name) {
-	return __gltfMeshes__()[$ name].primitives;
-}
-
-/// draw a mesh. can optionally override textures each primitive uses
-function gltfDrawMesh(name, textures=[]) {
-	var prims = gltfGetMeshPrimitives(name);
-	var texCount = array_length(textures);
-	var i = 0; repeat(array_length(prims)) {
-		var prim = prims[i++];
-		var tex = (i < texCount) ? textures[i] : prim.texture;
-		vertex_submit(prim.vbuff, pr_trianglelist, tex);
-	}
-}
-
-/// how many primitives does a mesh have - essentially how many times is the mesh broken up for different materials
-function gltfMeshPrimitiveCount(name) {
-	return array_length(__gltfMeshes__()[$ name].primitives);
-}
-
-/// get size of bounding box of mesh as vec(x,y,z)
-function gltfMeshSize(name) {
-	return __gltfMeshes__()[$ name].sizeGet();
-}
-
-/// get midpoint of bounding box of a mesh
-function gltfMeshMidpoint(name) {
-	return __gltfMeshes__()[$ name].dimensions.midPoint();
-}
-
 
 /**
  * Function Description
