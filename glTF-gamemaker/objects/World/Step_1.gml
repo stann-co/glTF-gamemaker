@@ -12,7 +12,7 @@ if (GLTF_DEBUG) {
 	}
 	
 	if (keyboard_check_pressed(vk_delete)) {
-		clearLoadedTextures(); // this will crash YYC
+		__gltfClearLoadedTextures(); // this will crash YYC
 	}
 	
 	if (--debugTextTimer <= 0) {
@@ -20,7 +20,7 @@ if (GLTF_DEBUG) {
 	}
 	
 	if (keyboard_check_pressed(vk_space)) {
-		gltfNextTestRoom();
+		exampleGltfNextTestRoom();
 		exit;
 	}
 }

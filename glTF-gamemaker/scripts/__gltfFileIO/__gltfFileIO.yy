@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__gltfFileIO",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__gltfFileIO",
+  "parent":{
+    "name":"gltfParser",
+    "path":"folders/gltfParser.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

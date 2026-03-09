@@ -5,7 +5,7 @@ scale = 1;
 var w = 3000;
 
 for (var i = 0; i < meshCount; i++) {
-	positions[i] = new vec3(lerp(0, w, -1+random(2)), 0, lerp(0, w, -1+random(2)));
+	positions[i] = new __gltfVec3(lerp(0, w, -1+random(2)), 0, lerp(0, w, -1+random(2)));
 }
 
 if (animateIndividually) {
@@ -21,8 +21,8 @@ if (animateIndividually) {
 	}
 }
 else {
-	var loaded = gltfLoad(gltfSettings().testFile);
-	testSkin = new skinnedMesh(loaded.skinnedMeshes[0]);
+	var loaded = gltfLoad(exampleGltfSettings().testFile);
+	testSkin = new gltfSkinnedMesh(loaded.skinnedMeshes[0]);
 	testSkin.update();
 	
 	var size = testSkin.getSize();

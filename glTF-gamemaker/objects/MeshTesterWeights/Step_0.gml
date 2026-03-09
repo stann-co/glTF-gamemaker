@@ -26,7 +26,7 @@ if (currentBone >= 0 && currentBone < maxBones) {
 	// when blending animations together
 	if (animateMethod == 1) {
 		var pose = mousePoses[currentBone];
-		pose.R = angle_to_quaternion(my, 0, mx);
+		pose.R = __gltfAngleToQuaternion(my, 0, mx);
 		testSkin.animateBlended(mousePoses);
 	}
 

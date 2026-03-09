@@ -1,6 +1,6 @@
 /// @desc camera input
 
-var mv = new vec4();
+var mv = new __gltfVec4();
 
 if (keyboard_check(vk_up)) mv.y -= 1;
 if (keyboard_check(vk_down)) mv.y += 1;

@@ -16,21 +16,21 @@ if (skinned) {
 	mousePoses = array_create(maxBones, undefined);
 	poseData = array_create(maxBones, undefined);
 	for (var i = 0; i < maxBones; i++) {
-		mousePoses[i] = new poseTriple();
+		mousePoses[i] = new gltfPoseTriple();
 		poseData[i] = matrix_build_identity();
 	}
 }
 
 uniforms = [
-	new shaderUniformFloat(shMeshWeights, "uBoneID", [ currentBone ]),
+	new shaderUniformFloat(shGltfMeshWeights, "uBoneID", [ currentBone ]),
 ];
 
 draw = function() {
 	if (skinned) {
-		testSkin.draw(shMeshWeights, uniforms);
+		testSkin.draw(shGltfMeshWeights, uniforms);
 		testSkin.debugDrawBones();
 	}
 	else {
-		drawMesh(testMesh);
+		gltfDrawMesh(testMesh);
 	}
 };
