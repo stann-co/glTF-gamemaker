@@ -236,6 +236,13 @@ function __gltfMulMats(m1, m2) {
 	return matrix_multiply(m2, m1);
 }
 
+/// multiply two matrices together, in the correct order
+/// utilise result_matrix to cut down on temp data structures
+function __gltfMulMatsResult(m1, m2, result) {
+	gml_pragma("forceinline");
+	return matrix_multiply(m2, m1, result);
+}
+
 /// scalar product of s and v, returns new vector
 function __gltfMulScalarVec(s, v) {
 	gml_pragma("forceinline");

@@ -12,7 +12,8 @@
  * @param {function} drawCode function containing draw code to run with this transform applied
  */
 function gltfDrawTransformed(px, py, pz, rot, scale, drawCode=function(){}) {
-	var m = matrix_build(px, py, pz, 0, 180, rot+180, scale, scale, scale);
+	static m = array_create(16);
+	matrix_build(px, py, pz, 0, 180, rot+180, scale, scale, scale, m);
 	matrix_set(matrix_world, m);
 	drawCode();
 	gltfSetIdentity();
@@ -30,7 +31,8 @@ function gltfDrawTransformed(px, py, pz, rot, scale, drawCode=function(){}) {
  * @param {function} drawCode function containing draw code to run with this transform applied
  */
 function gltfDrawTransformed3D(px, py, pz, rx, ry, rz, scale, drawCode=function(){}) {
-	var m = matrix_build(px, py, pz, rx, ry+180, rz+180, scale, scale, scale);
+	static m = array_create(16);
+	matrix_build(px, py, pz, rx, ry+180, rz+180, scale, scale, scale, m);
 	matrix_set(matrix_world, m);
 	drawCode();
 	gltfSetIdentity();

@@ -1,0 +1,6 @@
+vertex colour data
+check for any direct mappings between meshName <-> skinName
+	in case we can have more than one mesh use the same armature
+
+
+

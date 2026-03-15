@@ -85,39 +85,40 @@ function gltfSkinnedMesh(skinName) constructor {
 	/// calc transforms of each bone & return how much they move the vertices.
 	/// _fromAnimation should only be set to true when called from the animate function
 	static update = function(_in=[], _out=poseMatrices, _fromAnimation=false) {
+		// create a temp matrix for storing multiply results, so theres less temp data
+		var tempResult = array_create(16);
+		var I = matrix_build_identity();
 		for (var i = 0; i < skin.bones; i++) {
-			var t = (i<array_length(_in)) ? _in[i] : matrix_build_identity();
+			var t = (i<array_length(_in)) ? _in[i] : I;
 			
 			if (_fromAnimation) {
 				// animation data has all the information we need
-				//localTransform[i] = t;
 				array_copy(localTransform[i], 0, t, 0, 16);
 			}
 			else {
 				// 
-				//localTransform[i] = mulMats(t, data[i][1]);
-				array_copy(localTransform[i], 0, __gltfMulMats(data[i][1], t), 0, 16);
+				__gltfMulMatsResult(data[i][1], t, tempResult);
+				array_copy(localTransform[i], 0, tempResult, 0, 16);
 			}
 		}
 		
 		// root node never has a parent
-		modelTransform[0] = localTransform[0];
+		array_copy(modelTransform[0], 0, localTransform[0], 0, 16);
 		
 		for (var i = 1; i < skin.bones; i++) {
 			var parentNode = data[i][0];
 			if (is_undefined(parentNode)) {
-				//modelTransform[i] = localTransform[i];
 				array_copy(modelTransform[i], 0, localTransform[i], 0, 16);
 			}
 			else {
-				//modelTransform[i] = mulMats(modelTransform[parentNode], localTransform[i]);
-				array_copy(modelTransform[i], 0, __gltfMulMats(modelTransform[parentNode], localTransform[i]), 0, 16);
+				__gltfMulMatsResult(modelTransform[parentNode], localTransform[i], tempResult);
+				array_copy(modelTransform[i], 0, tempResult, 0, 16);
 			}
 		}
 		
 		for (var i = 0; i < min(skin.bones, MAXIMUM_BONES); i++) {
-			var m = __gltfMulMats(modelTransform[i], data[i][2]);
-			array_copy(_out, i*16, m, 0, 16);
+			__gltfMulMatsResult(modelTransform[i], data[i][2], tempResult);
+			array_copy(_out, i*16, tempResult, 0, 16);
 		}
 		
 		return self;
@@ -374,7 +375,9 @@ function gltfPoseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 	
 	// convert R to quaternion as this is what the model file knows and how rotations are blended together
 	// u can get model rotations in euler from the skinnedMesh class
-	if (!is_undefined(R) && array_length(R) == 3) R = __gltfAngleToQuaternion(R[0], R[1], R[2]);
+	if (!is_undefined(R) && array_length(R) == 3) {
+		__gltfAngleToQuaternion(R[0], R[1], R[2], R);
+	}
 	
 	/// T0,R0,S0 inputs are fallback values if any of the pose properties are undefined,
 	/// eg the default local transform of an armature
@@ -414,6 +417,11 @@ function gltfPoseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 /// data structure containing all relevant info about a loaded skinned mesh
 function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
 	// array of [PARENT] [LOCAL TRANSFORM] [INVERSE BIND MATRIX]
+	/*
+		data[i][0] = parent bone (array index or undefined)
+		data[i][1] = local transform matrix
+		data[i][2] = inverse bind matrix
+	*/
 	data = array_create(_boneCount);
 	// create arrays at the start so they are (hopefully) sequential in memory
 	for (var i = 0; i < _boneCount; i++) {

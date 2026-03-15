@@ -156,8 +156,6 @@ if two animations work on completely different bones, they will treat the weight
 `shSkinnedMeshLit`
 	shader that incorporates gamemakers built in lighting uniforms
 
-use new `result_matrix` parameter of `matrix_multiply` to boost performance where possible
-
 import mesh vertex colour
 
 (requested feature) bone masking for animation blending
