@@ -1,6 +1,16 @@
 vertex colour data
+
 check for any direct mappings between meshName <-> skinName
 	in case we can have more than one mesh use the same armature
 
+masked animations:
+	see if we can allow undefined instead of a fresh PoseTriple with default values
+	where is the best place to factor it in? (AnimationSampler or a child class? standalone functions?)
+
+
+(low prio)
+
+gltfAnimationSampler
+	predefine all lerp functions as statics to avoid duplicating functions at runtime
 
 
