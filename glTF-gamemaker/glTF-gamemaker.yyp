@@ -42,6 +42,7 @@
   },
   "name":"glTF-gamemaker",
   "resources":[
+    {"id":{"name":"notes, TODO","path":"notes/notes, TODO/notes, TODO.yy",},},
     {"id":{"name":"Arrows","path":"objects/Arrows/Arrows.yy",},},
     {"id":{"name":"Camera","path":"objects/Camera/Camera.yy",},},
     {"id":{"name":"MeshTester","path":"objects/MeshTester/MeshTester.yy",},},
