@@ -249,6 +249,16 @@ function __gltfSlerp(qa, qb, t) {
 	var qm = [ ];
 	var cosHalfTheta = qa[0]*qb[0] + qa[1]*qb[1] + qa[2]*qb[2] + qa[3]*qb[3];
 	
+	if(cosHalfTheta < 0){
+		qb = [
+			-qb[0],
+			-qb[1],
+			-qb[2],
+			-qb[3]
+		]
+		cosHalfTheta = -cosHalfTheta
+	}
+	
 	if (abs(cosHalfTheta) >= 1) {
 		array_copy(qm, 0, qa, 0, 4);
 		return qm;
@@ -259,8 +269,8 @@ function __gltfSlerp(qa, qb, t) {
 	
 	var ratioA, ratioB;
 	if (abs(sinHalfTheta) < 0.0001) {
-		ratioA = 0.5;
-		ratioB = 0.5;
+		ratioA = 1 - t;
+		ratioB = t;
 	}
 	else {
 		ratioA = sin((1 - t) * halfTheta) / sinHalfTheta;
