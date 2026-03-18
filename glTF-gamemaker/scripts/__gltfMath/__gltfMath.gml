@@ -250,8 +250,7 @@ function __gltfMulScalarVec(s, v) {
 	return v.duplicate().scale(s);
 }
 
-/// lerp two quaternions via spherical linear interpolation. not really tested but seems right
-/// TODO: find out if i need to shuffle parameters so its wxyz instead of xyzw
+/// lerp two quaternions via spherical linear interpolation.
 function __gltfSlerp(qa, qb, t) {
 	var qm = [ ];
 	var cosHalfTheta = qa[0]*qb[0] + qa[1]*qb[1] + qa[2]*qb[2] + qa[3]*qb[3];
