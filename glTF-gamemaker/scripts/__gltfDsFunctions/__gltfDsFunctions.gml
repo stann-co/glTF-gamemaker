@@ -26,3 +26,47 @@ function __gltfArrayLast(arr=[]) {
 	var n = array_length(arr);
 	return (n>0) ? arr[array_length(arr)-1] : undefined;
 }
+
+/// efficiently store booleans without arrays
+function gltfBitVector() constructor {
+	static NBITS = 32;
+	
+	arr = [];
+	len = 0;
+	
+	static set = function(bit, val=1) {
+		var iarr = bit div NBITS
+		bit = bit % NBITS;
+		while (len <= iarr) {
+			array_push(arr, 0);
+			len++;
+		}
+		var d = arr[iarr];
+		if (val == 0) {
+			arr[iarr] = d & ~(1 << bit);
+		}
+		else {
+			arr[iarr] = d | (1 << bit);
+		}
+	};
+	
+	static get = function(bit) {
+		var iarr = bit div NBITS;
+		bit = bit % NBITS;
+		while (len <= iarr) {
+			array_push(arr, 0);
+			len++;
+		}
+		var d = arr[iarr];
+		return (1 & (d >> bit));
+	};
+	
+	static clear = function() {
+		array_resize(arr, 0);
+		len = 0;
+	};
+	
+	static toString = function() {
+		return string(arr);
+	};
+}

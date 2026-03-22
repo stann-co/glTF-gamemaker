@@ -282,13 +282,9 @@ function __gltfLoadMesh(dat, buffers, meshID, skinID=undefined, animData=undefin
 		for (var j = 0; j < jointsCount; j++) {
 			var node = nodes[joints[j]];
 			
-			//var T = node[$ "translation"] ?? [0, 0, 0];
-			//var R = node[$ "rotation"] ?? [0, 0, 0, 1];
-			//var S = node[$ "scale"] ?? [1, 1, 1];
-			
-			var T = node[$ "translation"];// ?? [0, 0, 0];
-			var R = node[$ "rotation"];// ?? [0, 0, 0, 1];
-			var S = node[$ "scale"];// ?? [1, 1, 1];
+			var T = node[$ "translation"];
+			var R = node[$ "rotation"];
+			var S = node[$ "scale"];
 				
 			//var M = matrix_build_quaternion(T[0], T[1], T[2], R, S[0], S[1], S[2]);
 			
@@ -442,7 +438,7 @@ function __gltfGenerateSkinnedMesh(v, vn, vt, indices, joints, weights) {
  * @param {Id.VertexBuffer} vbuff Description
  * @param {real} [index]=0 primitiveID
  * @param {Pointer.Texture} [tex]=-1 Description
- * @param {Struct.aabb} [dims] dimensions
+ * @param {Struct.__gltfAabb} [dims] dimensions
  */
 function __gltfStoreMesh(name, vbuff, index, tex, dims) {
 	var meshes = __gltfMeshes__();
@@ -463,7 +459,7 @@ function gltfListMeshes() {
 	for (var i = 0; i < array_length(names); i++) {
 		//__gltfDebugPrint("mesh {0} is called {1}", [ i, names[i] ]);
 		// do a normal print statement so this still works when GLTF_DEBUG is false
-		show_debug_message(string_ext("mesh {0} is called {1}", [ i, names[i] ]));
+		show_debug_message($"mesh {i} is called {names[i]}");
 	}
 }
 
@@ -523,7 +519,7 @@ function __gltfVertexformat__(skinned=false) {
 		vertex_format_add_color();
 		return vertex_format_end();
 	})();
-	static format2 = (function() {
+	static formatSkinned = (function() {
 		vertex_format_begin();
 		vertex_format_add_position_3d();
 		vertex_format_add_normal();
@@ -533,7 +529,7 @@ function __gltfVertexformat__(skinned=false) {
 		vertex_format_add_color();
 		return vertex_format_end();
 	})();
-	return skinned ? format2 : format;
+	return skinned ? formatSkinned : format;
 }
 
 function __gltfDebugPrint(str, args=[]) {

@@ -18,6 +18,8 @@ function gltfSkinnedMesh(skinName) constructor {
 		show_error(string("skin not found: {0}", skinName), true);
 	}
 	
+	__gltfDebugPrint($"new SkinnedMesh instance: {skin.skinName}, bones: {skin.bones}");
+	
 	// foreach primitive in mesh, get default texture
 	primitives = gltfMeshPrimitiveCount(mesh);
 	texture = array_create(primitives, -1);
@@ -97,15 +99,16 @@ function gltfSkinnedMesh(skinName) constructor {
 		var masks = [];
 		for (var bn = 0; bn < array_length(bonenames); bn++) {
 			var index = getBoneIndex(bonenames[bn]);
-			array_push(masks,index);
+			array_push(masks, index);
 		} 
 		
 		var n = skin.bones;
 		var result = array_create(n);
 		for (var i = 0; i < n; i++) {
-			if (array_contains(masks,i) != invert){
+			if (array_contains(masks,i) != invert) {
 				result[i] = new gltfPoseTriple();
-			} else {
+			}
+			else {
 				result[i] = a[i];
 			}
 		}
@@ -194,7 +197,7 @@ function gltfSkinnedMesh(skinName) constructor {
 	
 	
 	/**
-	 * @return {Struct.vec} .x, .y, .z size of untransformed mesh
+	 * @return {Struct.__gltfVec4} .x, .y, .z size of untransformed mesh
 	 */
 	static getSize = function() {
 		return skin.size;
@@ -216,7 +219,7 @@ function gltfSkinnedMesh(skinName) constructor {
 	/**
 	 * poseTriple T,R,S of the default rest pose of bone
 	 * @param {real} boneIndex
-	 * @return {Struct.poseTriple}
+	 * @return {Struct.gltfPoseTriple}
 	 */
 	static getBoneRestPose = function(boneIndex) {
 		return skin.restPoses[boneIndex];
@@ -272,7 +275,7 @@ function gltfSkinnedMesh(skinName) constructor {
 /**
  * retrieve skin data
  * @param {String} name
- * @returns {Struct.__skin_data}
+ * @returns {Struct.__gltfSkinData}
  */
 function gltfGetSkin(name) {
 	var skins = __gltfSkins();
@@ -289,7 +292,7 @@ function gltfGetSkin(name) {
 /**
  * helper for generating pose data by lerping between keyframes
  * @param {Array} _keyframes
- * @returns {Struct.__skin_data}
+ * @returns {Struct.__gltfSkinData}
  */
 function gltfAnimationSampler(_keyframes, _values, _interp, _isRotation=true) constructor {
 	keyframes = _keyframes;
@@ -317,7 +320,7 @@ function gltfAnimationSampler(_keyframes, _values, _interp, _isRotation=true) co
 				if (isRotation) {
 					lerpFunc = function(i, t) {
 						var tween = __gltfInvlerp(keyframes[i], keyframes[i+1], t);
-						return __gltfSlerp(values[i], values[i+1], tween);
+						return __gltfQuaternionSlerp(values[i], values[i+1], tween);
 					};
 				}
 				else {
@@ -390,7 +393,7 @@ function gltfAnimationSampler(_keyframes, _values, _interp, _isRotation=true) co
 	};
 	
 	static toString = function() {
-		return string_ext("bone gltfAnimationSampler: {0}: {1} -> {2}", [ interp, string(keyframes), string(values) ]);
+		return $"bone gltfAnimationSampler: {interp}: {keyframes} -> {values}";
 	};
 }
 
@@ -434,7 +437,7 @@ function gltfPoseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 		
 		if (is_undefined(R)) R1 = p2.R;
 		else if (is_undefined(p2.R)) R1 = R;
-		else R1 = __gltfSlerp(R, p2.R, time);
+		else R1 = __gltfQuaternionSlerp(R, p2.R, time);
 		
 		if (is_undefined(S)) S1 = p2.S;
 		else if (is_undefined(p2.S)) S1 = S;
@@ -446,11 +449,11 @@ function gltfPoseTriple(_t=undefined, _r=undefined, _s=undefined) constructor {
 
 /// data structure containing all relevant info about a loaded skinned mesh
 function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor {
-	// array of [PARENT] [LOCAL TRANSFORM] [INVERSE BIND MATRIX]
+	// array of [PARENT BONE INDEX] [LOCAL TRANSFORM MATRIX] [INVERSE BIND MATRIX]
 	/*
-		data[i][0] = parent bone (array index or undefined)
-		data[i][1] = local transform matrix
-		data[i][2] = inverse bind matrix
+		data[i][0] = parent bone (array index or undefined if root bone)
+		data[i][1] = local transform
+		data[i][2] = inverse bind
 	*/
 	data = array_create(_boneCount);
 	// create arrays at the start so they are (hopefully) sequential in memory
@@ -485,13 +488,26 @@ function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor 
 		return boneNamesMap[$ bName];
 	};
 	
+	// throwing in a couple extra helpers here because this shit is not intuitive
+	// unused in SkinnedMesh.update() where it is accessed directly,
+	// because we just want that to be as fast as possible
+	static getBoneParent = function(boneIndex) {
+		return data[boneIndex][0];
+	};
+	static getBoneLocalTransform = function(boneIndex) {
+		return data[boneIndex][1];
+	};
+	static getBoneInverseBind = function(boneIndex) {
+		return data[boneIndex][2];
+	};
+	
 	/// @desc called by gltfLoad
-	/// @param {real} par
-	/// @param {array} loc
-	/// @param {array} inv
-	/// @param {String} boneName
-	/// @param {Struct.poseTriple} restPose
-	/// @param {Struct} [animData]
+	/// @param {real} par parent bone
+	/// @param {array} loc local transform matrix
+	/// @param {array} inv inverse bind matrix
+	/// @param {String} boneName bname
+	/// @param {Struct.poseTriple} restPose rest pose triple
+	/// @param {Struct} [animData] animation data
 	static addBone = function(par, loc, inv, boneName, restPose, animData=undefined) {
 		data[bones][0] = par;
 		array_copy(data[bones][1], 0, loc, 0, 16);
@@ -553,7 +569,7 @@ function __gltfSkinData(_name, _meshName, _boneCount=MAXIMUM_BONES) constructor 
 	};
 }
 
-/// @returns {Array<Struct.__skin_data>}
+/// @returns {Array<Struct.__gltfSkinData>}
 function __gltfSkins() {
 	static skins = [ ];
 	return skins;

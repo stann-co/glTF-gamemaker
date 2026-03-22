@@ -7,7 +7,7 @@ if (n >= 0 && n <= 9) {
 		lastDigit = n;
 		currentBone = n;
 		uniforms[0].setValues([ n ]);
-		hudDisplayText(string_ext("setting current bone: {0}", [ n ]));
+		hudDisplayText($"setting current bone: {n}");
 	}
 }
 
@@ -29,7 +29,7 @@ if (currentBone >= 0 && currentBone < maxBones) {
 		__gltfAngleToQuaternion(my, 0, mx, pose.R);
 		testSkin.animateBlended(mousePoses);
 	}
-
+	
 	// 2nd method: passing array of matrices into update() - more direct so faster
 	// however animations will not blend properly
 	if (animateMethod == 2) {
