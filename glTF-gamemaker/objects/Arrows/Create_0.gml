@@ -13,6 +13,10 @@ t = 0;
 tMin = 0;
 tMax = skin.getAnimationLength();
 
+skin.position.x = x;
+skin.position.y = y;
+skin.setScale(16);
+
 draw = function() {
 	skin.draw(exampleGltfSettings().defaultShader);
 };

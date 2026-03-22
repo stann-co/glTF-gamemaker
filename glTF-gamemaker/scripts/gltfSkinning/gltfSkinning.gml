@@ -36,12 +36,29 @@ function gltfSkinnedMesh(skinName) constructor {
 	localTransform = [ ];
 	modelTransform = [ ];
 	
+	// transform for the root bone to determine position etc the mesh is drawn
+	position = new __gltfVec3();
+	rotation = new __gltfVec3();
+	scale = new __gltfVec3(1, 1, 1);
+	
 	for (var i = 0; i < skin.bones; i++) {
 		localTransform[i] = array_create(16);
 		modelTransform[i] = array_create(16);
 	}
 	
 	currentAnimation = "none";
+	
+	// create a temp matrix for storing multiply results, so theres array instantiation
+	static tempResult = array_create(16);
+	
+	/// @function setScale
+	/// @desc sets scale.{x,y,z} to a uniform value
+	/// @param {real} _scale
+	static setScale = function(_scale) {
+		scale.x = _scale;
+		scale.y = _scale;
+		scale.z = _scale;
+	};
 	
 	/// @function animate(t)
 	/// @desc animate the mesh with the given timestamp using currentAnimation
@@ -118,8 +135,7 @@ function gltfSkinnedMesh(skinName) constructor {
 	/// calc transforms of each bone & return how much they move the vertices.
 	/// _fromAnimation should only be set to true when called from the animate function
 	static update = function(_in=[], _out=poseMatrices, _fromAnimation=false) {
-		// create a temp matrix for storing multiply results, so theres less temp data
-		var tempResult = array_create(16);
+		
 		var I = matrix_build_identity();
 		for (var i = 0; i < skin.bones; i++) {
 			var t = (i<array_length(_in)) ? _in[i] : I;
@@ -137,6 +153,10 @@ function gltfSkinnedMesh(skinName) constructor {
 		
 		// root node never has a parent
 		array_copy(modelTransform[0], 0, localTransform[0], 0, 16);
+		
+		// make a new base model transform from its position, rotation etc
+		var posTransform = matrix_build(position.x, position.y, position.z, rotation.x, rotation.y+180, rotation.z+180, scale.x, scale.y, scale.z);
+		__gltfMulMatsResult(modelTransform[0], posTransform, modelTransform[0]);
 		
 		for (var i = 1; i < skin.bones; i++) {
 			var parentNode = data[i][0];
@@ -233,6 +253,14 @@ function gltfSkinnedMesh(skinName) constructor {
 	/// model = model(parent) * local
 	static getBoneModelTransformMatrix = function(boneIndex) {
 		return modelTransform[boneIndex];
+	};
+	
+	/// this gets the position of a bone in world space
+	/// assumes update() has been called after changing (position, scale, rotation).(x, y, z)
+	static getBonePosition = function(bName) {
+		var bInd = getBoneIndex(bName);
+		var m = modelTransform[bInd];
+		return new __gltfVec3(m[12], m[13], m[14]);
 	};
 	
 	/// placeholder: does not currently draw "leaf" bones because it doesnt display the bones themselves,
