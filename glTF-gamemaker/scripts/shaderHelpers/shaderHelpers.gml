@@ -1,7 +1,7 @@
 /**
  * automatically set a shader and apply uniforms from an array
  * @param {Asset.GMShader} shaderID Description
- * @param {array<Struct.shaderUniform} [uniforms]=[] uniforms
+ * @param {array<Struct.shaderUniform>} [uniforms]=[] uniforms
  */
 function setShader(shaderID, uniforms=[]) {
 	shader_set(shaderID);

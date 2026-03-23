@@ -4,10 +4,9 @@ function exampleGltfSettings() {
 			r01_gltfAnimations,
 			r02_gltfWeights,
 			r03_gltfBlending,
+			//r98_stress,
 		],
 		currentRoom : -1,
-		
-		//startRoom : r98_stress,
 		
 		defaultShader : shGltfPSX,
 		//defaultShader : shGltfSkinnedMesh,

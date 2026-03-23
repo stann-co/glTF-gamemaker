@@ -11,7 +11,7 @@ if (n >= 1 && n <= 9) {
 		var a = n-1;
 		if (a < array_length(names)) {
 			animationOn[a] = !animationOn[a];
-			hudDisplayText(string_ext("toggling animation {0}: {1}, {2}", [ a, names[a], animationOn[a] ? "ON" : "OFF" ]));
+			hudDisplayText($"toggling animation {a}: {names[a]}, {animationOn[a] ? "ON" : "OFF"}");
 		}
 	}
 }

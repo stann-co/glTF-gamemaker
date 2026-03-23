@@ -7,10 +7,13 @@ masked animations:
 	see if we can allow undefined instead of a fresh PoseTriple with default values
 	where is the best place to factor it in? (AnimationSampler or a child class? standalone functions?)
 
+BlendTree
+	masking info
+	blending info
 
 (low prio)
 
 gltfAnimationSampler
-	predefine all lerp functions as statics to avoid duplicating functions at runtime
+	predefine all lerp functions as statics to avoid creating duplicate functions at runtime
 
-
+utilise matrix_transform_vertex instead gltfMulMatVec ??
